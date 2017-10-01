@@ -33,6 +33,8 @@ readonly PRIORITY_ACTION='pri'
 readonly DONE_ACTION='done'
 readonly UNKNOW_ACTION="*"
 
+readonly FIRST_TASK_NUMBER=1
+
 
 # Checks if STORAGE_FILE exists. Creates new one if not.
 if [ ! -e $STORAGE_FILE ]; then
@@ -51,52 +53,57 @@ if [ $SCRIPT_AMOUNT_OF_ARGUMENTS -ge $SCRIPT_MINIMAL_AMOUNT_OF_ARGUMENTS ]; then
 
   case $ACTION in
     $ADD_ACTION)
-      REDUNDANT_ARGUMENT=$3
+      TASK_DESCRIPTION=$2
 
-      # If REDUNDANT_ARGUMENT passed to script, then add command has invalid format.
-      # For example:
-      #   todo.sh add Запрограмувати    # valid
-      #   todo.sh add 'Запрограмувати'  # valid
-      #   todo.sh add "Запрограмувати"  # valid
-      # but
-      #   todo.sh add Купити молоко     # not valid
-      #   todo.sh add 'Купити молоко'   # valid
-      #   todo.sh add "Купити молоко"   # valid
-      if [ $REDUNDANT_ARGUMENT ]; then
-        echo 'Task description should be one word or multiple words enclosed by quotes.'
-        exit 1
-      else
-        TASK_DESCRIPTION=$2
+      if [ $TASK_DESCRIPTION ]; then
+        REDUNDANT_ARGUMENT=$3
 
-        FIRST_TASK_NUMBER=1
-        # TASK_NUMBER='' empty string
-
-        AMOUNT_OF_LINES_IN_STORAGE_FILE=`wc -l < $STORAGE_FILE`
-
-        # Determines task number.
-        # If STORAGE_FILE has zero lines,
-        # it means that task with first number is going to be created.
-        if [ $AMOUNT_OF_LINES_IN_STORAGE_FILE -eq 0 ]; then
-          TASK_NUMBER=$FIRST_TASK_NUMBER
+        # If REDUNDANT_ARGUMENT passed to script, then add command has invalid format.
+        # For example:
+        #   todo.sh add Запрограмувати    # valid
+        #   todo.sh add 'Запрограмувати'  # valid
+        #   todo.sh add "Запрограмувати"  # valid
+        # but
+        #   todo.sh add Купити молоко     # not valid
+        #   todo.sh add 'Купити молоко'   # valid
+        #   todo.sh add "Купити молоко"   # valid
+        if [ $REDUNDANT_ARGUMENT ]; then
+          echo 'Error: Task description should be one word or multiple words enclosed by quotes.'
+          exit 1
         else
-          LAST_LINE_NUMBER_IN_STORAGE_FILE=$AMOUNT_OF_LINES_IN_STORAGE_FILE
-          LAST_LINE_IN_STORAGE_FILE=`cat $STORAGE_FILE | sed -n "${LAST_LINE_NUMBER_IN_STORAGE_FILE}p"`
-          LAST_TASK_NUMBER=`echo $LAST_LINE_IN_STORAGE_FILE | sed -n 's/\..*//p'`
+          # TASK_NUMBER='' empty string
 
-          while [ ! $LAST_TASK_NUMBER ]
-          do
-            LAST_LINE_NUMBER_IN_STORAGE_FILE=`expr $LAST_LINE_NUMBER_IN_STORAGE_FILE - 1`
+          AMOUNT_OF_LINES_IN_STORAGE_FILE=`wc -l < $STORAGE_FILE`
+
+          # Determines task number.
+          # If STORAGE_FILE has zero lines,
+          # it means that task with first number is going to be created.
+          if [ $AMOUNT_OF_LINES_IN_STORAGE_FILE -eq 0 ]; then
+            TASK_NUMBER=$FIRST_TASK_NUMBER
+          else
+            LAST_LINE_NUMBER_IN_STORAGE_FILE=$AMOUNT_OF_LINES_IN_STORAGE_FILE
             LAST_LINE_IN_STORAGE_FILE=`cat $STORAGE_FILE | sed -n "${LAST_LINE_NUMBER_IN_STORAGE_FILE}p"`
             LAST_TASK_NUMBER=`echo $LAST_LINE_IN_STORAGE_FILE | sed -n 's/\..*//p'`
-          done
 
-          TASK_NUMBER=`expr $LAST_TASK_NUMBER + 1`
+            while [ ! $LAST_TASK_NUMBER ]
+            do
+              LAST_LINE_NUMBER_IN_STORAGE_FILE=`expr $LAST_LINE_NUMBER_IN_STORAGE_FILE - 1`
+              LAST_LINE_IN_STORAGE_FILE=`cat $STORAGE_FILE | sed -n "${LAST_LINE_NUMBER_IN_STORAGE_FILE}p"`
+              LAST_TASK_NUMBER=`echo $LAST_LINE_IN_STORAGE_FILE | sed -n 's/\..*//p'`
+            done
+
+            TASK_NUMBER=`expr $LAST_TASK_NUMBER + 1`
+          fi
+
+          echo "$TASK_NUMBER. \"$TASK_DESCRIPTION\"" >> $STORAGE_FILE
+
+          echo 'New task has been successfully created.'
         fi
-
-        echo "$TASK_NUMBER. \"$TASK_DESCRIPTION\"" >> $STORAGE_FILE
-
-        echo 'New task successfully created.'
+      else
+        echo 'Error: Task description is empty.'
+        exit 1
       fi
+
       ;;
     $LIST_ACTION)
       # Example:
@@ -157,29 +164,28 @@ if [ $SCRIPT_AMOUNT_OF_ARGUMENTS -ge $SCRIPT_MINIMAL_AMOUNT_OF_ARGUMENTS ]; then
               done
             fi
 
-            echo 'Task successfully deleted.'
+            echo 'Task has been successfully deleted.'
           else
             echo 'Task with such number not found.'
-            exit 1
           fi
         else
-          echo 'Task number should be an integer.'
+          echo 'Error: Task number should be an integer.'
           exit 1
         fi
       else
-        echo 'No task number specified.'
+        echo 'Error: No task number specified.'
         exit 1
       fi
 
       ;;
     $UNKNOW_ACTION)
-      echo 'Unknown action.'
+      echo 'Error: Unknown action. Possible actions: add, list, done.'
       exit 1
 
       ;;
   esac
 else
-  echo 'No argumnets passed to script.'
+  echo 'Error: No action specified. Possible actions: add, list, done.'
   exit 1
 fi
 
