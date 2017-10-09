@@ -55,7 +55,7 @@ if [ $SCRIPT_AMOUNT_OF_ARGUMENTS -ge $SCRIPT_MINIMAL_AMOUNT_OF_ARGUMENTS ]; then
     $ADD_ACTION)
       TASK_DESCRIPTION=$2
 
-      if [ $TASK_DESCRIPTION ]; then
+      if [ "$TASK_DESCRIPTION" ]; then
         REDUNDANT_ARGUMENT=$3
 
         # If REDUNDANT_ARGUMENT passed to script, then add command has invalid format.
